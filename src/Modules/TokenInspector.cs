@@ -1,5 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
+using P2PVTT.Services;
 using Silk.NET.OpenGL;
 
 namespace P2PVTT.Modules;
@@ -7,16 +8,22 @@ namespace P2PVTT.Modules;
 public class TokenInspector : IDisposable
 {
     private readonly GL _gl;
-    private readonly uint _characterTexture;
+    private TextureLoader _texLoader;
 
-    public TokenInspector(GL gl, uint charTex)
+    private uint _characterTexture;
+
+    private bool _texLoaded;
+
+    public TokenInspector(GL gl, TextureLoader texLoader)
     {
         _gl = gl;
-        _characterTexture = charTex;
+        _texLoader = texLoader;
     }
 
-    public void Render(int width, int height, int x, int y)
+    public void Render(int width, int height, int x, int y, string imagePath)
     {
+        LoadTextureOnce(imagePath);
+
         if (_characterTexture <= 0)
             throw new ArgumentException("Character texture cannot be <= 0");
 
@@ -34,6 +41,16 @@ public class TokenInspector : IDisposable
         ImGui.Image(new IntPtr(_characterTexture), new Vector2(100, 100));
 
         ImGui.End();
+    }
+
+    private void LoadTextureOnce(string imagePath)
+    {
+        if (!_texLoaded)
+        {
+            var image = ImageLoader.LoadImageRgba(imagePath);
+            _texLoaded = true;
+            _characterTexture = _texLoader.Load(image);
+        }
     }
 
     public void Dispose()

@@ -4,26 +4,21 @@ namespace P2PVTT.Services;
 
 public static class ImageLoader
 {
-    public static async Task<ImageResult> LoadImageRgbaAsync(string path)
+    public static ImageResult LoadImageRgba(string path)
     {
-        return await Task<ImageResult>
-            .Run(() =>
+        using var stream = new FileStream(
+            path,
+            new FileStreamOptions
             {
-                using var stream = new FileStream(
-                    path,
-                    new FileStreamOptions
-                    {
-                        Mode = FileMode.Open,
-                        Access = FileAccess.Read,
-                        Share = FileShare.Read,
-                        BufferSize = 64 * 1024,
-                        Options = FileOptions.SequentialScan,
-                    }
-                );
-                var image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+                Mode = FileMode.Open,
+                Access = FileAccess.Read,
+                Share = FileShare.Read,
+                BufferSize = 64 * 1024,
+                Options = FileOptions.SequentialScan,
+            }
+        );
+        var image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
 
-                return image;
-            })
-            .ConfigureAwait(false);
+        return image;
     }
 }

@@ -67,9 +67,7 @@ internal class Program
 
         _controller = new ImGuiController(_gl = _window.CreateOpenGL(), _window, _inputContext);
         _texLoader = new TextureLoader(_gl);
-        var image = ImageLoader.LoadImageRgbaAsync("assets/character.jpg").Result; // TODO await + when picking token
-        var texId = _texLoader.Load(image);
-        _tokenInspector = new TokenInspector(_gl, texId);
+        _tokenInspector = new TokenInspector(_gl, _texLoader);
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
@@ -88,7 +86,7 @@ internal class Program
         _gl.Clear(ClearBufferMask.ColorBufferBit);
 
         var width = (int)(WindowWidth * 0.2);
-        _tokenInspector.Render(width, WindowHeight, WindowWidth - width, 0);
+        _tokenInspector.Render(width, WindowHeight, WindowWidth - width, 0, "assets/character.jpg");
 
         _controller.Render();
     }
