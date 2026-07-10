@@ -160,7 +160,12 @@ public class TopPanel
         catch (DirectoryNotFoundException)
         {
             dirs = Directory.EnumerateDirectories(rest, "*", options).ToArray();
-            files = Directory.EnumerateFiles(rest, "*", options).ToArray();
+            files = Directory
+                .EnumerateFiles(path, "*", options)
+                .Where(w =>
+                    ImageExtensions.Any(a => w.EndsWith(a, StringComparison.OrdinalIgnoreCase))
+                )
+                .ToArray();
         }
         catch (Exception e)
         {
