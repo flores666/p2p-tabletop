@@ -153,7 +153,7 @@ public class TopPanel
             files = Directory
                 .EnumerateFiles(path, "*", options)
                 .Where(w =>
-                    !ImageExtensions.Any(a => w.EndsWith(a, StringComparison.OrdinalIgnoreCase))
+                    ImageExtensions.Any(a => w.EndsWith(a, StringComparison.OrdinalIgnoreCase))
                 )
                 .ToArray();
         }
