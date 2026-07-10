@@ -11,8 +11,7 @@ public class TokenInspector : IDisposable
     private TextureLoader _texLoader;
 
     private uint _characterTexture;
-
-    private bool _texLoaded;
+    private string _currentImagePath = null!;
 
     public TokenInspector(GL gl, TextureLoader texLoader)
     {
@@ -20,13 +19,8 @@ public class TokenInspector : IDisposable
         _texLoader = texLoader;
     }
 
-    public void Render(int width, int height, int x, int y, string imagePath)
+    public void Render(int width, int height, int x, int y)
     {
-        LoadTextureOnce(imagePath);
-
-        if (_characterTexture <= 0)
-            throw new ArgumentException("Character texture cannot be <= 0");
-
         ImGui.SetNextWindowPos(new Vector2(x, y), ImGuiCond.Always);
         ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
 
@@ -38,18 +32,36 @@ public class TokenInspector : IDisposable
         ImGui.Text("Token Inspector");
         ImGui.Separator();
 
-        ImGui.Image(new IntPtr(_characterTexture), new Vector2(100, 100));
+        if (_characterTexture != 0)
+        {
+            ImGui.Image(new IntPtr(_characterTexture), new Vector2(100, 100));
+        }
 
         ImGui.End();
     }
 
-    private void LoadTextureOnce(string imagePath)
+    private void LoadTokenTextureOnce(string imagePath)
     {
-        if (!_texLoaded)
+        if (string.IsNullOrEmpty(imagePath))
+        {
+            if (_characterTexture != 0)
+            {
+                DeleteTexture();
+            }
+
+            return;
+        }
+
+        if (_currentImagePath != imagePath)
+        {
+            DeleteTexture();
+        }
+
+        if (_characterTexture == 0)
         {
             var image = ImageLoader.LoadImageRgba(imagePath);
-            _texLoaded = true;
             _characterTexture = _texLoader.Load(image);
+            _currentImagePath = imagePath;
         }
     }
 
@@ -57,7 +69,18 @@ public class TokenInspector : IDisposable
     {
         if (_characterTexture != 0)
         {
-            _gl.DeleteTexture(_characterTexture);
+            DeleteTexture();
         }
+    }
+
+    private void DeleteTexture()
+    {
+        _gl.DeleteTexture(_characterTexture);
+        _characterTexture = 0;
+    }
+
+    public void ChangeTokenImage(object? sender, TokenImagePickedEvent e)
+    {
+        LoadTokenTextureOnce(e.Path);
     }
 }

@@ -19,6 +19,7 @@ internal class Program
 
     private static IInputContext _inputContext = null!;
     private static TokenInspector _tokenInspector = null!;
+    private static TopPanel _topPanel = null!;
     private static TextureLoader _texLoader = null!;
 
     private static void Main(string[] args)
@@ -46,6 +47,9 @@ internal class Program
 
     private static void OnWindowClosing()
     {
+        _topPanel.TokenImagePicked -= _tokenInspector.ChangeTokenImage;
+
+        _tokenInspector?.Dispose();
         _controller?.Dispose();
         _inputContext?.Dispose();
         _gl?.Dispose();
@@ -68,6 +72,9 @@ internal class Program
         _controller = new ImGuiController(_gl = _window.CreateOpenGL(), _window, _inputContext);
         _texLoader = new TextureLoader(_gl);
         _tokenInspector = new TokenInspector(_gl, _texLoader);
+
+        _topPanel = new TopPanel();
+        _topPanel.TokenImagePicked += _tokenInspector.ChangeTokenImage;
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
@@ -85,8 +92,11 @@ internal class Program
         _gl.ClearColor(Color.FromArgb(255, 255, 255, 255));
         _gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        var width = (int)(WindowWidth * 0.2);
-        _tokenInspector.Render(width, WindowHeight, WindowWidth - width, 0, "assets/character.jpg");
+        var tpHeight = (int)(WindowHeight * 0.05);
+        _topPanel.Render(WindowWidth, tpHeight, 0, 0);
+
+        var tiWidth = (int)(WindowWidth * 0.2);
+        _tokenInspector.Render(tiWidth, WindowHeight, WindowWidth - tiWidth, tpHeight);
 
         _controller.Render();
     }
