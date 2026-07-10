@@ -1,5 +1,6 @@
 using System.Drawing;
 using P2PVTT.Modules;
+using P2PVTT.Modules.TopPanel;
 using P2PVTT.Services;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -19,7 +20,7 @@ internal class Program
 
     private static IInputContext _inputContext = null!;
     private static TokenInspector _tokenInspector = null!;
-    private static TopPanel _topPanel = null!;
+    private static Panel _topPanel = null!;
     private static TextureLoader _texLoader = null!;
 
     private static void Main(string[] args)
@@ -73,7 +74,7 @@ internal class Program
         _texLoader = new TextureLoader(_gl);
         _tokenInspector = new TokenInspector(_gl, _texLoader);
 
-        _topPanel = new TopPanel();
+        _topPanel = new Panel();
         _topPanel.TokenImagePicked += _tokenInspector.ChangeTokenImage;
     }
 

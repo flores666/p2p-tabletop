@@ -1,18 +1,19 @@
-using System.Buffers;
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
+using P2PVTT.Modules.Events;
+using P2PVTT.Services;
 
-namespace P2PVTT.Modules;
+namespace P2PVTT.Modules.TopPanel;
 
-public class TopPanel
+public class Panel
 {
     private const string UniversalPopupName = "popup";
     private const string DemoPopupName = "Demo";
 
     private readonly byte[] Search = new byte[256];
 
-    public TopPanel()
+    public Panel()
     {
         var home = Encoding.UTF8.GetBytes(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
@@ -22,24 +23,6 @@ public class TopPanel
             Search[i] = home[i];
         }
     }
-
-    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".gif",
-        ".bmp",
-        ".svg",
-        ".ico",
-    };
-    private static readonly EnumerationOptions options = new EnumerationOptions
-    {
-        RecurseSubdirectories = false,
-        AttributesToSkip = FileAttributes.Hidden | FileAttributes.System,
-        IgnoreInaccessible = true,
-        MatchCasing = MatchCasing.CaseInsensitive,
-    };
 
     private readonly Vector2 Center = ImGui.GetMainViewport().GetCenter();
 
@@ -57,12 +40,12 @@ public class TopPanel
 
         RenderDemoWindow();
         ImGui.SameLine();
-        RenderLoadTokenWindow(700, 500);
+        RenderTokenLoader(700, 500);
 
         ImGui.End();
     }
 
-    private void RenderLoadTokenWindow(int width, int height)
+    private void RenderTokenLoader(int width, int height)
     {
         if (ImGui.Button("Load Token"))
         {
@@ -101,75 +84,18 @@ public class TopPanel
                 )
             )
             {
-                RenderDirectoryTreeNode(searchString);
+                DirectoryTreeNode.Render(
+                    searchString,
+                    FilePickerFlags.Images,
+                    (fileName) =>
+                    {
+                        TokenImagePicked?.Invoke(this, new TokenImagePickedEvent(fileName));
+                    }
+                );
                 ImGui.TreePop();
             }
 
             ImGui.EndPopup();
-        }
-    }
-
-    private void RenderDirectoryTreeNode(string path)
-    {
-        var directories = Array.Empty<string>();
-        var files = Array.Empty<string>();
-
-        GetDirectoriesAndFiles(path, out directories, out files);
-        if (directories.Length <= 0)
-            return;
-
-        foreach (var item in directories)
-        {
-            if (ImGui.TreeNode(item[(item.LastIndexOf('/') + 1)..]))
-            {
-                RenderDirectoryTreeNode(item);
-                ImGui.TreePop();
-            }
-        }
-
-        foreach (var file in files)
-        {
-            if (ImGui.Button(file[(file.LastIndexOf('/') + 1)..]))
-            {
-                TokenImagePicked?.Invoke(this, new TokenImagePickedEvent(file));
-            }
-        }
-    }
-
-    private void GetDirectoriesAndFiles(string path, out string[] dirs, out string[] files)
-    {
-        dirs = Array.Empty<string>();
-        files = Array.Empty<string>();
-
-        if (string.IsNullOrEmpty(path))
-            return;
-
-        var directory = Path.GetFileName(Path.TrimEndingDirectorySeparator(path));
-        var rest = path[..path.LastIndexOf(directory)];
-
-        try
-        {
-            dirs = Directory.EnumerateDirectories(path, "*", options).ToArray();
-            files = Directory
-                .EnumerateFiles(path, "*", options)
-                .Where(w =>
-                    ImageExtensions.Any(a => w.EndsWith(a, StringComparison.OrdinalIgnoreCase))
-                )
-                .ToArray();
-        }
-        catch (DirectoryNotFoundException)
-        {
-            dirs = Directory.EnumerateDirectories(rest, "*", options).ToArray();
-            files = Directory
-                .EnumerateFiles(path, "*", options)
-                .Where(w =>
-                    ImageExtensions.Any(a => w.EndsWith(a, StringComparison.OrdinalIgnoreCase))
-                )
-                .ToArray();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
         }
     }
 
