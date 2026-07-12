@@ -1,6 +1,6 @@
 using ImGuiNET;
 
-namespace P2PVTT.Services;
+namespace P2PVTT.Modules.Partial;
 
 public enum FilePickerFlags
 {

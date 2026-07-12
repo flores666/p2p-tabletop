@@ -2,7 +2,7 @@ using System.Numerics;
 using System.Text;
 using ImGuiNET;
 using P2PVTT.Modules.Events;
-using P2PVTT.Services;
+using P2PVTT.Modules.Partial;
 
 namespace P2PVTT.Modules.TopPanel;
 
