@@ -48,7 +48,7 @@ internal class Program
 
     private static void OnWindowClosing()
     {
-        _topPanel.TokenImagePicked -= _tokenInspector.ChangeTokenImage;
+        _topPanel.TokenLoaderModule.TokenImagePicked -= _tokenInspector.ChangeTokenImage;
 
         _tokenInspector?.Dispose();
         _controller?.Dispose();
@@ -75,7 +75,7 @@ internal class Program
         _tokenInspector = new TokenInspector(_gl, _texLoader);
 
         _topPanel = new Panel();
-        _topPanel.TokenImagePicked += _tokenInspector.ChangeTokenImage;
+        _topPanel.TokenLoaderModule.TokenImagePicked += _tokenInspector.ChangeTokenImage;
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
