@@ -48,9 +48,7 @@ internal class Program
 
     private static void OnWindowClosing()
     {
-        _topPanel.TokenLoaderModule.TokenImagePicked -= _tokenInspector.ChangeTokenImage;
-
-        _tokenInspector?.Dispose();
+        _topPanel?.Dispose();
         _controller?.Dispose();
         _inputContext?.Dispose();
         _gl?.Dispose();
@@ -70,19 +68,13 @@ internal class Program
             kb.KeyDown += OnKeyDown;
         }
 
+        _tokenInspector = new TokenInspector();
         _controller = new ImGuiController(_gl = _window.CreateOpenGL(), _window, _inputContext);
         _texLoader = new TextureLoader(_gl);
-        _tokenInspector = new TokenInspector(_gl, _texLoader);
-
-        _topPanel = new Panel();
-        _topPanel.TokenLoaderModule.TokenImagePicked += _tokenInspector.ChangeTokenImage;
+        _topPanel = new Panel(_gl, _texLoader);
     }
 
-    private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3)
-    {
-        if (key == Key.Escape)
-            _window.Close();
-    }
+    private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3) { }
 
     private static void OnUpdate(double deltaTime) { }
 

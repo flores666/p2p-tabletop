@@ -1,24 +1,12 @@
 using System.Numerics;
 using ImGuiNET;
-using P2PVTT.Modules.Events;
-using P2PVTT.Services;
-using Silk.NET.OpenGL;
 
 namespace P2PVTT.Modules;
 
-public class TokenInspector : IDisposable
+public class TokenInspector
 {
-    private readonly GL _gl;
-    private TextureLoader _texLoader;
-
     private uint _characterTexture;
     private string _currentImagePath = null!;
-
-    public TokenInspector(GL gl, TextureLoader texLoader)
-    {
-        _gl = gl;
-        _texLoader = texLoader;
-    }
 
     public void Render(int width, int height, int x, int y)
     {
@@ -39,49 +27,5 @@ public class TokenInspector : IDisposable
         }
 
         ImGui.End();
-    }
-
-    private void LoadTokenTextureOnce(string imagePath)
-    {
-        if (string.IsNullOrEmpty(imagePath))
-        {
-            if (_characterTexture != 0)
-            {
-                DeleteTexture();
-            }
-
-            return;
-        }
-
-        if (_currentImagePath != imagePath)
-        {
-            DeleteTexture();
-        }
-
-        if (_characterTexture == 0)
-        {
-            var image = ImageLoader.LoadImageRgba(imagePath);
-            _characterTexture = _texLoader.Load(image);
-            _currentImagePath = imagePath;
-        }
-    }
-
-    public void Dispose()
-    {
-        if (_characterTexture != 0)
-        {
-            DeleteTexture();
-        }
-    }
-
-    private void DeleteTexture()
-    {
-        _gl.DeleteTexture(_characterTexture);
-        _characterTexture = 0;
-    }
-
-    public void ChangeTokenImage(object? sender, TokenImagePickedEvent e)
-    {
-        LoadTokenTextureOnce(e.Path);
     }
 }

@@ -1,17 +1,19 @@
 using System.Numerics;
 using ImGuiNET;
 using Modules.TopPanel.TokenLoader;
+using P2PVTT.Services;
+using Silk.NET.OpenGL;
 
 namespace P2PVTT.Modules.TopPanel;
 
-public class Panel
+public class Panel : IDisposable
 {
     private const string DemoPopupName = "Demo";
-    public Loader TokenLoaderModule { get; private set; }
+    public Loader _tokenLoaderModule;
 
-    public Panel()
+    public Panel(GL gl, TextureLoader tl)
     {
-        TokenLoaderModule = new Loader();
+        _tokenLoaderModule = new Loader(gl, tl);
     }
 
     public void Render(int width, int height, int x, int y)
@@ -26,7 +28,7 @@ public class Panel
 
         RenderDemoWindow();
         ImGui.SameLine();
-        TokenLoaderModule.Render(700, 500);
+        _tokenLoaderModule.Render(550, 600);
 
         ImGui.End();
     }
@@ -48,5 +50,10 @@ public class Panel
             ImGui.ShowDemoWindow();
             ImGui.EndPopup();
         }
+    }
+
+    public void Dispose()
+    {
+        _tokenLoaderModule?.Dispose();
     }
 }
