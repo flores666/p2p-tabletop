@@ -9,11 +9,11 @@ namespace P2PVTT.Modules.TopPanel;
 public class Panel : IDisposable
 {
     private const string DemoPopupName = "Demo";
-    public Loader _tokenLoaderModule;
+    public readonly Loader TokenLoaderModule;
 
     public Panel(GL gl, TextureLoader tl)
     {
-        _tokenLoaderModule = new Loader(gl, tl);
+        TokenLoaderModule = new Loader(gl, tl);
     }
 
     public void Render(int width, int height, int x, int y)
@@ -28,7 +28,7 @@ public class Panel : IDisposable
 
         RenderDemoWindow();
         ImGui.SameLine();
-        _tokenLoaderModule.Render(550, 600);
+        TokenLoaderModule.Render(550, 600);
 
         ImGui.End();
     }
@@ -54,6 +54,6 @@ public class Panel : IDisposable
 
     public void Dispose()
     {
-        _tokenLoaderModule?.Dispose();
+        TokenLoaderModule?.Dispose();
     }
 }

@@ -1,12 +1,13 @@
 using System.Numerics;
 using ImGuiNET;
+using P2PVTT.Modules.Events;
 
 namespace P2PVTT.Modules;
 
 public class TokenInspector
 {
-    private uint _characterTexture;
-    private string _currentImagePath = null!;
+    private uint _tokenTextureId;
+    private string _tokenName = null!;
 
     public void Render(int width, int height, int x, int y)
     {
@@ -21,11 +22,22 @@ public class TokenInspector
         ImGui.Text("Token Inspector");
         ImGui.Separator();
 
-        if (_characterTexture != 0)
+        if (_tokenTextureId != 0)
         {
-            ImGui.Image(new IntPtr(_characterTexture), new Vector2(100, 100));
+            ImGui.Image(new IntPtr(_tokenTextureId), new Vector2(100, 100));
+            ImGui.SameLine();
+            if (!string.IsNullOrEmpty(_tokenName))
+            {
+                ImGui.Text(_tokenName);
+            }
         }
 
         ImGui.End();
+    }
+
+    public void DisplayToken(object? sender, TokenCreatedEvent e)
+    {
+        _tokenTextureId = e.TextureId;
+        _tokenName = e.TokenName;
     }
 }

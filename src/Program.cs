@@ -32,6 +32,8 @@ internal class Program
             Size = new Vector2D<int>(WindowWidth, WindowHeight),
             WindowState = WindowState.Normal,
             WindowBorder = WindowBorder.Resizable,
+            FramesPerSecond = 60,
+            UpdatesPerSecond = 60,
         };
 
         _window = Window.Create(wOptions);
@@ -72,6 +74,8 @@ internal class Program
         _controller = new ImGuiController(_gl = _window.CreateOpenGL(), _window, _inputContext);
         _texLoader = new TextureLoader(_gl);
         _topPanel = new Panel(_gl, _texLoader);
+
+        _topPanel.TokenLoaderModule.TokenCreated += _tokenInspector.DisplayToken;
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3) { }

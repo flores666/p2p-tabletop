@@ -11,17 +11,23 @@ namespace Modules.TopPanel.TokenLoader;
 
 public class Loader : IDisposable
 {
+    private uint _textureId = 0;
+    private string _currentImagePath = null!;
+    private byte[] _tokenName = new byte[128];
+    private byte[] _tokenType = new byte[128];
+    private byte[] _tokenSize = new byte[128];
+
     private readonly byte[] Search = new byte[256];
     private int _windowWidth;
     private int _windowHeight;
-    private uint _textureId = 0;
-    private string _currentImagePath = null!;
     private GL _gl;
     private readonly TextureLoader _texLoader;
+    private readonly int _customPadding = 8;
 
     private Vector2 FramePadding => ImGui.GetStyle().FramePadding;
 
     public event EventHandler<TokenImagePickedEvent>? TokenImagePicked;
+    public event EventHandler<TokenCreatedEvent>? TokenCreated;
 
     public Loader(GL gl, TextureLoader texLoader)
     {
@@ -41,6 +47,12 @@ public class Loader : IDisposable
         {
             ImGui.CloseCurrentPopup();
         };
+
+        TokenCreated += (object? _, TokenCreatedEvent _) =>
+        {
+            ImGui.CloseCurrentPopup();
+        };
+
         TokenImagePicked += ChangeTokenImage;
     }
 
@@ -68,12 +80,73 @@ public class Loader : IDisposable
 
         if (ImGui.BeginPopup(Constants.SharedPopupName))
         {
-            var childWidth = (int)((width * 0.4) - FramePadding.X * 3);
-            var childHeight = (int)((height * 0.35) - FramePadding.Y * 2);
+            var imagesChildWidth = (int)((width * 0.4) - FramePadding.X * 3);
+            var imagesChildHeight = (int)((height * 0.35) - FramePadding.Y * 2);
 
-            RenderImageChild(childWidth, childHeight);
+            ImGui.Text("Add Token");
+            ImGui.TextDisabled("Create token to place on the map");
+
+            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + _customPadding);
+
+            RenderImageChild(imagesChildWidth, imagesChildHeight);
+            ImGui.SameLine();
+            RenderInputsChild((int)((width * 0.6) - FramePadding.X * 3), imagesChildHeight);
+
+            RenderFinalButtons();
+
             ImGui.EndPopup();
         }
+    }
+
+    private void RenderFinalButtons()
+    {
+        if (ImGui.Button("Cancel"))
+        {
+            DeleteTexture();
+            ImGui.CloseCurrentPopup();
+        }
+
+        ImGui.SameLine();
+
+        if (ImGui.Button("Create Token"))
+        {
+            TokenCreated?.Invoke(null, new TokenCreatedEvent(_tokenName, _textureId));
+        }
+    }
+
+    private void RenderInputsChild(int width, int height)
+    {
+        ImGui.BeginChild("Inputs", new Vector2(width, height), ImGuiChildFlags.Borders);
+
+        ImGui.PushItemWidth(-1);
+
+        ImGui.Text("TOKEN NAME*");
+        ImGui.InputText(
+            "##n",
+            _tokenName,
+            (uint)_tokenName.Length,
+            ImGuiInputTextFlags.ElideLeft | ImGuiInputTextFlags.EscapeClearsAll
+        );
+
+        ImGui.Text("TOKEN TYPE");
+        ImGui.InputText(
+            "##t",
+            _tokenType,
+            (uint)_tokenType.Length,
+            ImGuiInputTextFlags.ElideLeft | ImGuiInputTextFlags.EscapeClearsAll
+        );
+
+        ImGui.Text("TOKEN SIZE (CELLS)");
+        ImGui.InputText(
+            "##s",
+            _tokenSize,
+            (uint)_tokenSize.Length,
+            ImGuiInputTextFlags.ElideLeft | ImGuiInputTextFlags.EscapeClearsAll
+        );
+
+        ImGui.PopItemWidth();
+
+        ImGui.EndChild();
     }
 
     private void RenderImageChild(int width, int height)
@@ -240,18 +313,13 @@ public class Loader : IDisposable
         return size;
     }
 
-    public void ChangeTokenImage(object? sender, TokenImagePickedEvent e)
+    private void ChangeTokenImage(object? sender, TokenImagePickedEvent e)
     {
         LoadTokenTextureOnce(e.Path);
     }
 
     public void Dispose()
     {
-        if (_textureId != 0)
-        {
-            DeleteTexture();
-        }
-
         TokenImagePicked -= ChangeTokenImage;
     }
 
