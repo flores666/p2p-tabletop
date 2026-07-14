@@ -16,7 +16,11 @@ public class TokenInspectorComponent
 
         ImGui.Begin(
             "Right Bar",
-            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove
+            ImGuiWindowFlags.NoScrollbar
+                | ImGuiWindowFlags.NoScrollWithMouse
+                | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoTitleBar
+                | ImGuiWindowFlags.NoMove
         );
 
         ImGui.Text("Token Inspector");

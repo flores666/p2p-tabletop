@@ -23,7 +23,11 @@ public class MainMenuComponent : IDisposable
 
         ImGui.Begin(
             "Top Panel",
-            ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoMove
+            ImGuiWindowFlags.NoScrollbar
+                | ImGuiWindowFlags.NoScrollWithMouse
+                | ImGuiWindowFlags.NoResize
+                | ImGuiWindowFlags.NoTitleBar
+                | ImGuiWindowFlags.NoMove
         );
 
         RenderDemoWindow();
