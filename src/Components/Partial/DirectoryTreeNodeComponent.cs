@@ -1,6 +1,6 @@
 using ImGuiNET;
 
-namespace P2PVTT.Modules.Partial;
+namespace P2PVTT.Components.Partial;
 
 public enum FilePickerFlags
 {
@@ -8,7 +8,7 @@ public enum FilePickerFlags
     Images,
 };
 
-public static class DirectoryTreeNode
+public static class DirectoryTreeNodeComponent
 {
     private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {

@@ -1,10 +1,10 @@
 using System.Numerics;
 using ImGuiNET;
-using P2PVTT.Modules.Events;
+using P2PVTT.Events;
 
-namespace P2PVTT.Modules;
+namespace P2PVTT.Components;
 
-public class TokenInspector
+public class TokenInspectorComponent
 {
     private uint _tokenTextureId;
     private string _tokenName = null!;
@@ -35,7 +35,7 @@ public class TokenInspector
         ImGui.End();
     }
 
-    public void DisplayToken(object? sender, TokenCreatedEvent e)
+    public void HandleTokenCreatedEvent(object? sender, TokenCreatedEvent e)
     {
         _tokenTextureId = e.TextureId;
         _tokenName = e.TokenName;

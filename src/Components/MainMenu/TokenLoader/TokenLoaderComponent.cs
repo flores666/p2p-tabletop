@@ -1,15 +1,15 @@
 using System.Numerics;
 using System.Text;
 using ImGuiNET;
-using P2PVTT.Modules;
-using P2PVTT.Modules.Events;
-using P2PVTT.Modules.Partial;
+using P2PVTT.Components;
+using P2PVTT.Components.Partial;
+using P2PVTT.Events;
 using P2PVTT.Services;
 using Silk.NET.OpenGL;
 
-namespace Modules.TopPanel.TokenLoader;
+namespace Components.TopPanel.TokenLoader;
 
-public class Loader : IDisposable
+public class TokenLoaderComponent : IDisposable
 {
     private uint _textureId = 0;
     private string _currentImagePath = null!;
@@ -26,10 +26,10 @@ public class Loader : IDisposable
 
     private Vector2 FramePadding => ImGui.GetStyle().FramePadding;
 
-    public event EventHandler<TokenImagePickedEvent>? TokenImagePicked;
+    event EventHandler<TokenImagePickedEvent>? TokenImagePicked;
     public event EventHandler<TokenCreatedEvent>? TokenCreated;
 
-    public Loader(GL gl, TextureLoader texLoader)
+    public TokenLoaderComponent(GL gl, TextureLoader texLoader)
     {
         _gl = gl;
         _texLoader = texLoader;
@@ -43,6 +43,20 @@ public class Loader : IDisposable
             Search[i] = home[i];
         }
 
+        AddEventHandlers();
+    }
+
+    public void Render(int width, int height)
+    {
+        _windowWidth = width;
+        _windowHeight = height;
+
+        var buttonPressed = ImGui.Button("Load Token");
+        RenderTokenCreatorPopup(buttonPressed, width, height);
+    }
+
+    private void AddEventHandlers()
+    {
         TokenImagePicked += (object? _, TokenImagePickedEvent _) =>
         {
             ImGui.CloseCurrentPopup();
@@ -54,15 +68,6 @@ public class Loader : IDisposable
         };
 
         TokenImagePicked += ChangeTokenImage;
-    }
-
-    public void Render(int width, int height)
-    {
-        _windowWidth = width;
-        _windowHeight = height;
-
-        var buttonPressed = ImGui.Button("Load Token");
-        RenderTokenCreatorPopup(buttonPressed, width, height);
     }
 
     private void RenderTokenCreatorPopup(bool openPopup, int width, int height)
@@ -110,7 +115,10 @@ public class Loader : IDisposable
 
         if (ImGui.Button("Create Token"))
         {
-            TokenCreated?.Invoke(null, new TokenCreatedEvent(_tokenName, _textureId));
+            TokenCreated?.Invoke(
+                null,
+                new TokenCreatedEvent(Guid.NewGuid(), _tokenName, _textureId)
+            );
         }
     }
 
@@ -258,7 +266,7 @@ public class Loader : IDisposable
                 )
             )
             {
-                DirectoryTreeNode.Render(
+                DirectoryTreeNodeComponent.Render(
                     searchString,
                     FilePickerFlags.Images,
                     (fileName) =>
