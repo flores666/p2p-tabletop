@@ -7,6 +7,7 @@ namespace P2PVTT.Components.Scene;
 public class SceneComponent
 {
     private readonly GL _gl;
+    private uint _sceneTexture;
 
     public SceneComponent(GL gl)
     {
@@ -27,6 +28,20 @@ public class SceneComponent
                 | ImGuiWindowFlags.NoMove
         );
 
+        if (_sceneTexture != 0)
+        {
+            ImGui.Image(new IntPtr(_sceneTexture), new Vector2(width, height));
+        }
+
         ImGui.End();
+    }
+
+    private void InitDemoSceneOnce()
+    {
+        var frameBuffer = _gl.GenFramebuffer();
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, frameBuffer);
+
+        var textureColorBuffer = _gl.GenTexture();
+        _gl.BindTexture(TextureTarget.Texture2D, textureColorBuffer);
     }
 }

@@ -9,7 +9,7 @@ using Silk.NET.OpenGL;
 
 namespace Components.TopPanel.TokenLoader;
 
-public class TokenLoaderComponent : IDisposable
+public class TokenLoaderComponent
 {
     private uint _textureId = 0;
     private string _currentImagePath = null!;
@@ -26,7 +26,7 @@ public class TokenLoaderComponent : IDisposable
 
     private Vector2 FramePadding => ImGui.GetStyle().FramePadding;
 
-    event EventHandler<TokenImagePickedEvent>? TokenImagePicked;
+    private event EventHandler<TokenImagePickedEvent>? _tokenImagePicked;
     public event EventHandler<TokenCreatedEvent>? TokenCreated;
 
     public TokenLoaderComponent(GL gl, TextureLoader texLoader)
@@ -52,12 +52,13 @@ public class TokenLoaderComponent : IDisposable
         _windowHeight = height;
 
         var buttonPressed = ImGui.Button("Load Token");
+
         RenderTokenCreatorPopup(buttonPressed, width, height);
     }
 
     private void AddEventHandlers()
     {
-        TokenImagePicked += (object? _, TokenImagePickedEvent _) =>
+        _tokenImagePicked += (object? _, TokenImagePickedEvent _) =>
         {
             ImGui.CloseCurrentPopup();
         };
@@ -67,23 +68,23 @@ public class TokenLoaderComponent : IDisposable
             ImGui.CloseCurrentPopup();
         };
 
-        TokenImagePicked += ChangeTokenImage;
+        _tokenImagePicked += ChangeTokenImage;
     }
 
     private void RenderTokenCreatorPopup(bool openPopup, int width, int height)
     {
         if (openPopup)
         {
-            ImGui.OpenPopup(Constants.SharedPopupName);
+            ImGui.OpenPopup(UsefulVars.SharedPopupName);
         }
 
-        if (ImGui.IsPopupOpen(Constants.SharedPopupName))
+        if (ImGui.IsPopupOpen(UsefulVars.SharedPopupName))
         {
-            ImGui.SetNextWindowPos(Constants.Center, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
+            ImGui.SetNextWindowPos(UsefulVars.Center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowSize(new Vector2(width, height));
         }
 
-        if (ImGui.BeginPopup(Constants.SharedPopupName))
+        if (ImGui.BeginPopup(UsefulVars.SharedPopupName))
         {
             var imagesChildWidth = (int)((width * 0.4) - FramePadding.X * 3);
             var imagesChildHeight = (int)((height * 0.35) - FramePadding.Y * 2);
@@ -236,7 +237,7 @@ public class TokenLoaderComponent : IDisposable
 
         if (ImGui.IsPopupOpen(popupTitle))
         {
-            ImGui.SetNextWindowPos(Constants.Center, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
+            ImGui.SetNextWindowPos(UsefulVars.Center, ImGuiCond.Always, new Vector2(0.5f, 0.5f));
             ImGui.SetNextWindowSize(new Vector2(width, height));
         }
 
@@ -271,7 +272,7 @@ public class TokenLoaderComponent : IDisposable
                     FilePickerFlags.Images,
                     (fileName) =>
                     {
-                        TokenImagePicked?.Invoke(this, new TokenImagePickedEvent(fileName));
+                        _tokenImagePicked?.Invoke(this, new TokenImagePickedEvent(fileName));
                     }
                 );
                 ImGui.TreePop();
@@ -324,11 +325,6 @@ public class TokenLoaderComponent : IDisposable
     private void ChangeTokenImage(object? sender, TokenImagePickedEvent e)
     {
         LoadTokenTextureOnce(e.Path);
-    }
-
-    public void Dispose()
-    {
-        TokenImagePicked -= ChangeTokenImage;
     }
 
     private void DeleteTexture()

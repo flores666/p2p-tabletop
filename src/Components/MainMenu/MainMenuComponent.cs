@@ -6,7 +6,7 @@ using Silk.NET.OpenGL;
 
 namespace P2PVTT.Components.MainMenu;
 
-public class MainMenuComponent : IDisposable
+public class MainMenuComponent
 {
     private const string DemoPopupName = "Demo";
     public readonly TokenLoaderComponent TokenLoader;
@@ -21,6 +21,7 @@ public class MainMenuComponent : IDisposable
         ImGui.SetNextWindowPos(new Vector2(x, y), ImGuiCond.Always);
         ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
 
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8, 0));
         ImGui.Begin(
             "Top Panel",
             ImGuiWindowFlags.NoScrollbar
@@ -30,11 +31,17 @@ public class MainMenuComponent : IDisposable
                 | ImGuiWindowFlags.NoMove
         );
 
+        ImGui.SetCursorPosY(height * 0.5f - UsefulVars.PredictedButtonHeight * 0.5f);
         RenderDemoWindow();
+
         ImGui.SameLine();
+
+        ImGui.SetCursorPosY(height * 0.5f - UsefulVars.PredictedButtonHeight * 0.5f);
         TokenLoader.Render(550, 600);
 
         ImGui.End();
+
+        ImGui.PopStyleVar();
     }
 
     private void RenderDemoWindow()
@@ -46,7 +53,7 @@ public class MainMenuComponent : IDisposable
 
         if (ImGui.IsPopupOpen(DemoPopupName))
         {
-            ImGui.SetNextWindowPos(Constants.Center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+            ImGui.SetNextWindowPos(UsefulVars.Center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         }
 
         if (ImGui.BeginPopup(DemoPopupName))
@@ -54,10 +61,5 @@ public class MainMenuComponent : IDisposable
             ImGui.ShowDemoWindow();
             ImGui.EndPopup();
         }
-    }
-
-    public void Dispose()
-    {
-        TokenLoader?.Dispose();
     }
 }

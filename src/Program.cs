@@ -62,7 +62,6 @@ internal class Program
 
     private static void OnWindowClosing()
     {
-        _topPanel?.Dispose();
         _controller?.Dispose();
         _inputContext?.Dispose();
         _gl?.Dispose();
