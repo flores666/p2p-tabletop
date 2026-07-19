@@ -83,6 +83,48 @@ void main()
     {
         _gl.BindFramebuffer(GLEnum.Framebuffer, _sceneFramebuffer);
         _gl.UseProgram(_shaderProgram);
+
+        var vertices = new List<float>();
+        var cx = 0f;
+        var cy = 0f;
+        var radius = 0.5f;
+        var segments = 100;
+
+        vertices.Add(cx);
+        vertices.Add(cy);
+        vertices.Add(0f);
+
+        for (var i = 0; i <= segments; i++)
+        {
+            var theta = 2 * Math.PI * (float)i / (float)segments;
+            var x = radius * (float)Math.Cos(theta);
+            var y = radius * (float)Math.Sin(theta);
+
+            vertices.Add(x + cx);
+            vertices.Add(y + cy);
+            vertices.Add(0f);
+        }
+
+        var vao = _gl.GenVertexArray();
+        _gl.GenBuffers(1, out uint vbo);
+
+        _gl.BindVertexArray(vao);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
+        _gl.BufferData<float>(
+            GLEnum.ArrayBuffer,
+            (uint)vertices.Count * sizeof(float),
+            vertices.ToArray().AsSpan(),
+            GLEnum.StaticDraw
+        );
+
+        _gl.VertexAttribPointer(0, 3, GLEnum.Float, false, 3 * sizeof(float), 0);
+        _gl.EnableVertexAttribArray(0);
+
+        _gl.BindVertexArray(vao);
+
+        _gl.DrawArrays(GLEnum.TriangleFan, 0, (uint)segments + 2);
+
+        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
     }
 
     private void InitializeShader()

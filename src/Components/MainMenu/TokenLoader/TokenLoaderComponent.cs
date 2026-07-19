@@ -22,7 +22,6 @@ public class TokenLoaderComponent
     private int _windowHeight;
     private GL _gl;
     private readonly TextureLoader _texLoader;
-    private readonly int _customPadding = 8;
 
     private Vector2 FramePadding => ImGui.GetStyle().FramePadding;
 
