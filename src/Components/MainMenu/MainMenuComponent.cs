@@ -21,7 +21,10 @@ public class MainMenuComponent
         ImGui.SetNextWindowPos(new Vector2(x, y), ImGuiCond.Always);
         ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
 
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(8, 0));
+        ImGui.PushStyleVar(
+            ImGuiStyleVar.WindowPadding,
+            new Vector2(8, height / 2 - UsefulVars.PredictedButtonHeight * 0.5f)
+        );
         ImGui.Begin(
             "Top Panel",
             ImGuiWindowFlags.NoScrollbar
@@ -30,18 +33,15 @@ public class MainMenuComponent
                 | ImGuiWindowFlags.NoTitleBar
                 | ImGuiWindowFlags.NoMove
         );
+        ImGui.PopStyleVar();
 
-        ImGui.SetCursorPosY(height * 0.5f - UsefulVars.PredictedButtonHeight * 0.5f);
         RenderDemoWindow();
 
         ImGui.SameLine();
 
-        ImGui.SetCursorPosY(height * 0.5f - UsefulVars.PredictedButtonHeight * 0.5f);
         TokenLoader.Render(550, 600);
 
         ImGui.End();
-
-        ImGui.PopStyleVar();
     }
 
     private void RenderDemoWindow()

@@ -8,5 +8,5 @@ public static class UsefulVars
     public static string SharedPopupName => "Popup";
     public static Vector2 Center => ImGui.GetMainViewport().GetCenter();
     public static float PredictedButtonHeight =>
-        ImGui.CalcTextSize("A").Y + ImGui.GetStyle().FramePadding.Y * 2;
+        ImGui.CalcTextSize("A").Y + (int)(ImGui.GetStyle().WindowPadding.Y + 1);
 }

@@ -86,17 +86,15 @@ public class TokenLoaderComponent
 
         if (ImGui.BeginPopup(UsefulVars.SharedPopupName))
         {
-            var imagesChildWidth = (int)((width * 0.4) - FramePadding.X * 3);
+            var imagesChildWidth = (int)((width * 0.4));
             var imagesChildHeight = (int)((height * 0.35) - FramePadding.Y * 2);
 
             ImGui.Text("Add Token");
             ImGui.TextDisabled("Create token to place on the map");
 
-            ImGui.SetCursorPosY(ImGui.GetCursorPosY() + _customPadding);
-
             RenderImageChild(imagesChildWidth, imagesChildHeight);
             ImGui.SameLine();
-            RenderInputsChild((int)((width * 0.6) - FramePadding.X * 3), imagesChildHeight);
+            RenderInputsChild((int)ImGui.GetContentRegionAvail().X, imagesChildHeight);
 
             RenderFinalButtons();
 
@@ -106,7 +104,16 @@ public class TokenLoaderComponent
 
     private void RenderFinalButtons()
     {
-        if (ImGui.Button("Cancel"))
+        ImGui.SetCursorPosY(_windowHeight - UsefulVars.PredictedButtonHeight - FramePadding.Y * 2);
+
+        var cancelButtonText = "Cancel";
+        var createButtonText = "Create Token";
+
+        var width =
+            ImGui.CalcTextSize(cancelButtonText + createButtonText).X + FramePadding.X * 3.5;
+        ImGui.SetCursorPosX(ImGui.GetContentRegionAvail().X - (int)width);
+
+        if (ImGui.Button(cancelButtonText))
         {
             DeleteTexture();
             ImGui.CloseCurrentPopup();
@@ -114,7 +121,7 @@ public class TokenLoaderComponent
 
         ImGui.SameLine();
 
-        if (ImGui.Button("Create Token"))
+        if (ImGui.Button(createButtonText))
         {
             TokenCreated?.Invoke(
                 null,
@@ -160,36 +167,46 @@ public class TokenLoaderComponent
 
     private void RenderImageChild(int width, int height)
     {
-        ImGui.BeginChild("Image", new Vector2(width, height), ImGuiChildFlags.Borders);
+        ImGui.BeginChild(
+            "Image",
+            new Vector2(width, height),
+            ImGuiChildFlags.Borders,
+            ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar
+        );
 
         ImGui.Text("TOKEN IMAGE");
 
         var choosingButtonText = "Choose image";
-        var buttonHeight = ImGui.CalcTextSize(choosingButtonText).Y + FramePadding.Y * 2;
-        var buttonWidth = width / 2 - FramePadding.X * 3;
-        var radius = (int)(width * 0.65);
+        var diameter =
+            ImGui.GetContentRegionAvail().Y - UsefulVars.PredictedButtonHeight - FramePadding.Y;
 
-        var targetPreviewX =
-            (int)(ImGui.GetContentRegionAvail().X * 0.5 - radius / 2) + FramePadding.X * 2;
+        var targetPreviewX = width * 0.5f - diameter * 0.5f;
 
         ImGui.SetCursorPosX(targetPreviewX);
         ImGui.PushStyleVar(ImGuiStyleVar.ChildRounding, 180);
+        ImGui.PushStyleVar(ImGuiStyleVar.ChildBorderSize, 4);
+
+        var delta = new Vector2(4, 4);
         ImGui.BeginChild(
             "Image preview",
-            new Vector2(radius, radius),
+            new Vector2(diameter, diameter) + delta,
             ImGuiChildFlags.Borders,
             ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoScrollbar
         );
+
+        ImGui.PopStyleVar();
+        ImGui.PopStyleVar();
+
         if (_textureId != 0)
         {
-            var size = new Vector2(radius, radius);
-            var min = ImGui.GetCursorScreenPos() - new Vector2(FramePadding.X * 2);
+            var size = new Vector2(diameter, diameter);
+            var min = ImGui.GetWindowPos() + delta * 0.5f;
             var max = min + size;
 
             ImGui
                 .GetWindowDrawList()
                 .AddImageRounded(
-                    new IntPtr(_textureId),
+                    (nint)_textureId,
                     min,
                     max,
                     Vector2.Zero,
@@ -198,17 +215,12 @@ public class TokenLoaderComponent
                     180,
                     ImDrawFlags.RoundCornersAll
                 );
-
-            ImGui.Dummy(size);
         }
         ImGui.EndChild();
-        ImGui.PopStyleVar();
 
-        var targetY = (int)(height - FramePadding.Y * 3) - buttonHeight;
-        ImGui.SetCursorPosY(targetY);
         var chooseImagePressed = ImGui.Button(
             choosingButtonText,
-            new Vector2(buttonWidth, buttonHeight)
+            new Vector2(width / 2, UsefulVars.PredictedButtonHeight)
         );
 
         RenderImagePickerPopup(
@@ -219,7 +231,12 @@ public class TokenLoaderComponent
 
         ImGui.SameLine();
 
-        if (ImGui.Button("Remove", new Vector2(buttonWidth, buttonHeight)))
+        if (
+            ImGui.Button(
+                "Remove",
+                new Vector2(ImGui.GetContentRegionAvail().X, UsefulVars.PredictedButtonHeight)
+            )
+        )
         {
             DeleteTexture();
         }

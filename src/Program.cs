@@ -1,5 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
+using P2PVTT;
 using P2PVTT.Components;
 using P2PVTT.Components.MainMenu;
 using P2PVTT.Components.Scene;
@@ -13,15 +14,10 @@ using Silk.NET.Windowing;
 
 internal class Program
 {
-    private static int _windowWidth = 1280;
-    private static int _windowHeight = 720;
     private static readonly int _halfMargin = 3;
     private static readonly string Title = "Virtual Table App";
 
     private static readonly Vector4 AppBackground = Rgba(7, 7, 6);
-
-    private static int _tokenInspectorWidth = (int)(_windowWidth * 0.2);
-    private static int _topPanelHeight = (int)(_windowHeight * 0.05);
 
     private static IWindow _window = null!;
     private static ImGuiController _controller = null!;
@@ -31,7 +27,7 @@ internal class Program
     private static TokenInspectorComponent _tokenInspector = null!;
     private static MainMenuComponent _topPanel = null!;
     private static SceneComponent _scene = null!;
-
+    private static MainLayout _layout;
     private static TextureLoader _texLoader = null!;
     private static GameState _gameState = null!;
 
@@ -41,7 +37,10 @@ internal class Program
         {
             Title = Title,
             WindowClass = "floating-windows", // if you using Hyprland, create window rule for this class
-            Size = new Vector2D<int>(_windowWidth, _windowHeight),
+            Size = new Vector2D<int>(
+                (int)AppWindowState.WindowWidth,
+                (int)AppWindowState.WindowHeight
+            ),
             WindowState = WindowState.Normal,
             WindowBorder = WindowBorder.Resizable,
             FramesPerSecond = 60,
@@ -62,6 +61,7 @@ internal class Program
 
     private static void OnWindowClosing()
     {
+        _scene.Dispose();
         _controller?.Dispose();
         _inputContext?.Dispose();
         _gl?.Dispose();
@@ -69,13 +69,12 @@ internal class Program
 
     private static void OnFrameBufferSize(Vector2D<int> d)
     {
-        _gl.Viewport(d);
+        //_gl.Viewport(d);
 
-        _windowWidth = d.X;
-        _windowHeight = d.Y;
+        AppWindowState.WindowWidth = (uint)d.X;
+        AppWindowState.WindowHeight = (uint)d.Y;
 
-        _tokenInspectorWidth = (int)(_windowWidth * 0.2);
-        _topPanelHeight = (int)(_windowHeight * 0.05);
+        _layout = CalculateMainLayout();
     }
 
     private static void OnLoad()
@@ -89,7 +88,10 @@ internal class Program
 
         _gameState = new GameState();
         _controller = new ImGuiController(_gl = _window.CreateOpenGL(), _window, _inputContext);
+
         ApplyTheme();
+        _layout = CalculateMainLayout();
+
         _texLoader = new TextureLoader(_gl);
 
         _topPanel = new MainMenuComponent(_gl, _texLoader);
@@ -100,6 +102,8 @@ internal class Program
         // displays info only when token picked from scene
         _topPanel.TokenLoader.TokenCreated += _tokenInspector.HandleTokenCreatedEvent;
         _topPanel.TokenLoader.TokenCreated += _gameState.HandleTokenCreatedEvent;
+
+        _gl.ClearColor(AppBackground.X, AppBackground.Y, AppBackground.Z, AppBackground.W);
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3) { }
@@ -110,34 +114,30 @@ internal class Program
     {
         _controller.Update((float)deltaTime);
 
-        ClearBackground();
-
-        var layout = CalculateMainLayout();
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        _gl.Viewport(0, 0, AppWindowState.WindowWidth, AppWindowState.WindowHeight);
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
 
         _topPanel.Render(
-            layout.TopPanel.Width,
-            layout.TopPanel.Height,
-            layout.TopPanel.X,
-            layout.TopPanel.Y
+            _layout.TopPanel.Width,
+            _layout.TopPanel.Height,
+            _layout.TopPanel.X,
+            _layout.TopPanel.Y
         );
-
-        _scene.Render(layout.Scene.Width, layout.Scene.Height, layout.Scene.X, layout.Scene.Y);
 
         _tokenInspector.Render(
-            layout.TokenInspector.Width,
-            layout.TokenInspector.Height,
-            layout.TokenInspector.X,
-            layout.TokenInspector.Y
+            _layout.TokenInspector.Width,
+            _layout.TokenInspector.Height,
+            _layout.TokenInspector.X,
+            _layout.TokenInspector.Y
         );
 
+        _scene.Render(_layout.Scene.Width, _layout.Scene.Height, _layout.Scene.X, _layout.Scene.Y);
+
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        _gl.Viewport(0, 0, AppWindowState.WindowWidth, AppWindowState.WindowHeight);
+
         _controller.Render();
-    }
-
-    private static void ClearBackground()
-    {
-        _gl.ClearColor(AppBackground.X, AppBackground.Y, AppBackground.Z, AppBackground.W);
-
-        _gl.Clear(ClearBufferMask.ColorBufferBit);
     }
 
     private static Vector4 Rgba(int r, int g, int b, int a = 255)
@@ -250,20 +250,22 @@ internal class Program
 
         var topPanelX = margin;
         var topPanelY = margin;
-        var topPanelWidth = _windowWidth - margin * 2;
-        var topPanelHeight = _topPanelHeight;
+        var topPanelWidth = (int)AppWindowState.WindowWidth - margin * 2;
+
+        var tokenInspectorWidth = (int)(AppWindowState.WindowWidth * 0.2);
+        var topPanelHeight = (int)(AppWindowState.WindowHeight * 0.05);
 
         var contentY = topPanelY + topPanelHeight + margin;
-        var contentHeight = _windowHeight - topPanelHeight - margin * 3;
+        var contentHeight = (int)AppWindowState.WindowHeight - topPanelHeight - margin * 3;
 
         var sceneX = margin;
         var sceneY = contentY;
-        var sceneWidth = _windowWidth - _tokenInspectorWidth - margin * 2;
+        var sceneWidth = (int)AppWindowState.WindowWidth - tokenInspectorWidth - margin * 2;
         var sceneHeight = contentHeight;
 
         var inspectorX = sceneX + sceneWidth + margin;
         var inspectorY = contentY;
-        var inspectorWidth = _tokenInspectorWidth - margin;
+        var inspectorWidth = tokenInspectorWidth - margin;
         var inspectorHeight = contentHeight;
 
         return new MainLayout(
