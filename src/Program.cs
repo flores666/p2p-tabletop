@@ -104,6 +104,11 @@ internal class Program
         _topPanel.TokenLoader.TokenCreated += _gameState.HandleTokenCreatedEvent;
 
         _gl.ClearColor(AppBackground.X, AppBackground.Y, AppBackground.Z, AppBackground.W);
+
+        Console.WriteLine($"OpenGL version: {_gl.GetStringS(GLEnum.Version)}");
+        Console.WriteLine($"GLSL version:   {_gl.GetStringS(GLEnum.ShadingLanguageVersion)}");
+        Console.WriteLine($"Renderer:       {_gl.GetStringS(GLEnum.Renderer)}");
+        Console.WriteLine($"Vendor:         {_gl.GetStringS(GLEnum.Vendor)}");
     }
 
     private static void OnKeyDown(IKeyboard keyboard, Key key, int arg3) { }
@@ -116,7 +121,11 @@ internal class Program
 
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
         _gl.Viewport(0, 0, AppWindowState.WindowWidth, AppWindowState.WindowHeight);
-        _gl.Clear(ClearBufferMask.ColorBufferBit);
+        _gl.Clear(
+            ClearBufferMask.ColorBufferBit
+                | ClearBufferMask.DepthBufferBit
+                | ClearBufferMask.StencilBufferBit
+        );
 
         _topPanel.Render(
             _layout.TopPanel.Width,

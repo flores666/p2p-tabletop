@@ -8,27 +8,42 @@ public sealed class SceneComponent : IDisposable
 {
     private readonly GL _gl;
 
-    private const string _fragmentShaderCode =
-        @"#version 330 core
+    private const string _fragmentShaderCode = """
+            #version 330 core
 
-// Output variable for the final color of the fragment
-out vec4 FragColor;
+            out vec4 FragColor;
 
-void main()
-{
-    // RGBA format (Red, Green, Blue, Alpha)
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); 
-}
+            void main()
+            {
+                // RGBA format (Red, Green, Blue, Alpha)
+                FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f); 
+            }
+        """;
+    private const string _vertexShaderCode = """
+        #version 330 core
 
-";
+        // Input vertex position data from Vertex Buffer Object (VBO)
+        layout (location = 0) in vec3 aPos;
+
+        void main() {
+            // Convert vec3 position to vec4 clip space coordinates
+            gl_Position = vec4(aPos, 1.0);
+        }
+        """;
+
     private uint _fragmentShader;
     private uint _shaderProgram;
     private uint _sceneFramebuffer;
     private uint _sceneColorTexture;
     private uint _sceneRenderBufferObject;
 
-    private bool _initialized;
     private bool _disposed;
+    private uint _frameWidth;
+    private uint _frameHeight;
+    private uint _vertexShader;
+    private uint _vbo;
+    private uint _vao;
+    private uint _ebo;
 
     public SceneComponent(GL gl)
     {
@@ -39,8 +54,6 @@ void main()
     {
         ImGui.SetNextWindowPos(new Vector2(x, y), ImGuiCond.Always);
         ImGui.SetNextWindowSize(new Vector2(width, height), ImGuiCond.Always);
-
-        InitializeFrame((uint)width, (uint)height);
 
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
 
@@ -60,10 +73,8 @@ void main()
             var availableSize = ImGui.GetContentRegionAvail();
             if (availableSize.X > 0 && availableSize.Y > 0)
             {
-                var sceneWidth = Math.Max(1, (int)availableSize.X);
-                var sceneHeight = Math.Max(1, (int)availableSize.Y);
-
-                DrawScene((uint)sceneWidth, (uint)sceneHeight);
+                InitializeFrame((uint)availableSize.X, (uint)availableSize.Y);
+                DrawScene((uint)availableSize.X, (uint)availableSize.Y);
 
                 ImGui.Image(
                     (nint)_sceneColorTexture,
@@ -71,8 +82,6 @@ void main()
                     new Vector2(0.0f, 1.0f),
                     new Vector2(1.0f, 0.0f)
                 );
-
-                //_gl.UseProgram(0);
             }
         }
 
@@ -81,53 +90,30 @@ void main()
 
     private void DrawScene(uint width, uint height)
     {
-        _gl.BindFramebuffer(GLEnum.Framebuffer, _sceneFramebuffer);
         _gl.UseProgram(_shaderProgram);
 
-        var vertices = new List<float>();
-        var cx = 0f;
-        var cy = 0f;
-        var radius = 0.5f;
-        var segments = 100;
+        _gl.BindFramebuffer(GLEnum.Framebuffer, _sceneFramebuffer);
+        _gl.Viewport(0, 0, width, height);
 
-        vertices.Add(cx);
-        vertices.Add(cy);
-        vertices.Add(0f);
-
-        for (var i = 0; i <= segments; i++)
-        {
-            var theta = 2 * Math.PI * (float)i / (float)segments;
-            var x = radius * (float)Math.Cos(theta);
-            var y = radius * (float)Math.Sin(theta);
-
-            vertices.Add(x + cx);
-            vertices.Add(y + cy);
-            vertices.Add(0f);
-        }
-
-        var vao = _gl.GenVertexArray();
-        _gl.GenBuffers(1, out uint vbo);
-
-        _gl.BindVertexArray(vao);
-        _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        _gl.BufferData<float>(
-            GLEnum.ArrayBuffer,
-            (uint)vertices.Count * sizeof(float),
-            vertices.ToArray().AsSpan(),
-            GLEnum.StaticDraw
+        _gl.ClearColor(0f, 0f, 0f, 0f);
+        _gl.Clear(
+            ClearBufferMask.ColorBufferBit
+                | ClearBufferMask.DepthBufferBit
+                | ClearBufferMask.StencilBufferBit
         );
 
-        _gl.VertexAttribPointer(0, 3, GLEnum.Float, false, 3 * sizeof(float), 0);
-        _gl.EnableVertexAttribArray(0);
+        _gl.BindVertexArray(_vao);
 
-        _gl.BindVertexArray(vao);
+        unsafe
+        {
+            _gl.DrawElements(GLEnum.Triangles, 6, GLEnum.UnsignedInt, null);
+        }
 
-        _gl.DrawArrays(GLEnum.TriangleFan, 0, (uint)segments + 2);
-
+        _gl.BindVertexArray(0);
         _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
     }
 
-    private void InitializeShader()
+    private void InitializeShaders()
     {
         _fragmentShader = _gl.CreateShader(GLEnum.FragmentShader);
         _gl.ShaderSource(_fragmentShader, _fragmentShaderCode);
@@ -137,35 +123,162 @@ void main()
         if (!string.IsNullOrEmpty(shaderLog))
             Console.WriteLine("SHADER LOG: " + shaderLog);
 
+        _vertexShader = _gl.CreateShader(GLEnum.VertexShader);
+        _gl.ShaderSource(_vertexShader, _vertexShaderCode);
+        _gl.CompileShader(_vertexShader);
+
+        shaderLog = _gl.GetShaderInfoLog(_vertexShader);
+        if (!string.IsNullOrEmpty(shaderLog))
+            Console.WriteLine("SHADER LOG: " + shaderLog);
+
         _shaderProgram = _gl.CreateProgram();
         _gl.AttachShader(_shaderProgram, _fragmentShader);
+        _gl.AttachShader(_shaderProgram, _vertexShader);
 
         _gl.LinkProgram(_shaderProgram);
 
+        _gl.GetProgram(_shaderProgram, GLEnum.LinkStatus, out int linkStatus);
+
+        Console.WriteLine($"Program link status: {linkStatus}");
+        var pLog = _gl.GetProgramInfoLog(_shaderProgram);
+        if (!string.IsNullOrEmpty(pLog))
+            Console.WriteLine($"Program log: {pLog}");
+
         _gl.DeleteShader(_fragmentShader);
+        _gl.DeleteShader(_vertexShader);
+    }
+
+    private void CreateShapes()
+    {
+        float[] vertices =
+        {
+            0.5f,
+            0.5f,
+            0.0f, // Vertex 0: Top-Right
+            0.5f,
+            -0.5f,
+            0.0f, // Vertex 1: Bottom-Right
+            -0.5f,
+            -0.5f,
+            0.0f, // Vertex 2: Bottom-Left
+            -0.5f,
+            0.5f,
+            0.0f, // Vertex 3: Top-Left
+        };
+
+        uint[] indices =
+        {
+            0,
+            1,
+            3, // First Triangle (Top-Right, Bottom-Right, Top-Left)
+            1,
+            2,
+            3, // Second Triangle (Bottom-Right, Bottom-Left, Top-Left)
+        };
+
+        _gl.GenVertexArrays(1, out _vao);
+        _gl.GenBuffers(1, out _vbo);
+        _gl.GenBuffers(1, out _ebo);
+
+        _gl.BindVertexArray(_vao);
+
+        _gl.BindBuffer(GLEnum.ArrayBuffer, _vbo);
+        _gl.BufferData<float>(
+            GLEnum.ArrayBuffer,
+            sizeof(float) * (uint)vertices.Length,
+            vertices.AsSpan(),
+            GLEnum.StaticDraw
+        );
+
+        _gl.GetBufferParameter(GLEnum.ArrayBuffer, GLEnum.BufferSize, out int vboSize);
+        _gl.BindBuffer(GLEnum.ElementArrayBuffer, _ebo);
+        _gl.BufferData<uint>(
+            GLEnum.ElementArrayBuffer,
+            sizeof(uint) * (uint)indices.Length,
+            indices.AsSpan(),
+            GLEnum.StaticDraw
+        );
+
+        _gl.GetBufferParameter(GLEnum.ElementArrayBuffer, GLEnum.BufferSize, out int eboSize);
+
+        Console.WriteLine($"VBO size: {vboSize}");
+        Console.WriteLine($"EBO size: {eboSize}");
+
+        _gl.VertexAttribPointer(0, 3, GLEnum.Float, false, 3 * sizeof(float), nint.Zero);
+        _gl.EnableVertexAttribArray(0);
+
+        _gl.BindVertexArray(0);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+        _gl.BindBuffer(GLEnum.ElementArrayBuffer, 0);
     }
 
     private void InitializeFrame(uint width, uint height)
     {
-        _gl.Viewport(0, 0, width, height);
+        if (_sceneFramebuffer == 0)
+        {
+            CreateFramebuffer(width, height);
+            InitializeShaders();
+            CreateShapes();
 
-        if (_initialized)
-            return;
+            _frameWidth = width;
+            _frameHeight = height;
+        }
 
-        _sceneFramebuffer = _gl.GenFramebuffer();
+        if (_frameWidth != width || _frameHeight != height)
+        {
+            ResizeFramebuffer(width, height);
+
+            _frameWidth = width;
+            _frameHeight = height;
+        }
+    }
+
+    private void ResizeFramebuffer(uint width, uint height)
+    {
         _gl.BindFramebuffer(GLEnum.Framebuffer, _sceneFramebuffer);
-
-        _sceneColorTexture = _gl.GenTexture();
+        _gl.BindRenderbuffer(GLEnum.Renderbuffer, _sceneRenderBufferObject);
         _gl.BindTexture(GLEnum.Texture2D, _sceneColorTexture);
 
         _gl.TexImage2D(
             GLEnum.Texture2D,
             0,
-            InternalFormat.Rgb,
+            InternalFormat.Rgba,
             width,
             height,
             0,
-            GLEnum.Rgb,
+            GLEnum.Rgba,
+            GLEnum.UnsignedByte,
+            Array.Empty<byte>()
+        );
+
+        _gl.RenderbufferStorage(GLEnum.Renderbuffer, GLEnum.Depth24Stencil8, width, height);
+
+        if (_gl.CheckFramebufferStatus(GLEnum.Framebuffer) != GLEnum.FramebufferComplete)
+        {
+            throw new Exception("Framebuffer is not complete");
+        }
+
+        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
+        _gl.BindTexture(GLEnum.Texture2D, 0);
+        _gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
+    }
+
+    private void CreateFramebuffer(uint width, uint height)
+    {
+        _gl.GenFramebuffers(1, out _sceneFramebuffer);
+        _gl.BindFramebuffer(GLEnum.Framebuffer, _sceneFramebuffer);
+
+        _gl.GenTextures(1, out _sceneColorTexture);
+        _gl.BindTexture(GLEnum.Texture2D, _sceneColorTexture);
+
+        _gl.TexImage2D(
+            GLEnum.Texture2D,
+            0,
+            InternalFormat.Rgba,
+            width,
+            height,
+            0,
+            GLEnum.Rgba,
             GLEnum.UnsignedByte,
             Array.Empty<byte>()
         );
@@ -182,7 +295,7 @@ void main()
             0
         );
 
-        _gl.GenRenderbuffers(_sceneRenderBufferObject);
+        _gl.GenRenderbuffers(1, out _sceneRenderBufferObject);
         _gl.BindRenderbuffer(GLEnum.Renderbuffer, _sceneRenderBufferObject);
         _gl.RenderbufferStorage(GLEnum.Renderbuffer, GLEnum.Depth24Stencil8, width, height);
         _gl.FramebufferRenderbuffer(
@@ -198,10 +311,6 @@ void main()
         }
 
         _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
-
-        InitializeShader();
-
-        _initialized = true;
     }
 
     public void Dispose()
@@ -218,17 +327,33 @@ void main()
         if (_fragmentShader != 0)
             _gl.DeleteShader(_fragmentShader);
 
+        if (_vertexShader != 0)
+            _gl.DeleteShader(_vertexShader);
+
         if (_shaderProgram != 0)
             _gl.DeleteProgram(_shaderProgram);
 
         if (_sceneRenderBufferObject != 0)
             _gl.DeleteRenderbuffer(_sceneRenderBufferObject);
 
+        if (_vao != 0)
+            _gl.DeleteVertexArray(_vao);
+
+        if (_ebo != 0)
+            _gl.DeleteBuffer(_ebo);
+
+        if (_vbo != 0)
+            _gl.DeleteBuffer(_vbo);
+
         _sceneFramebuffer = 0;
         _sceneRenderBufferObject = 0;
         _sceneColorTexture = 0;
         _shaderProgram = 0;
         _fragmentShader = 0;
+        _vertexShader = 0;
+        _vbo = 0;
+        _vao = 0;
+        _ebo = 0;
 
         _disposed = true;
     }
